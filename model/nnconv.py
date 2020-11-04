@@ -67,8 +67,8 @@ class AttentionNNConv(NNConv):
         pyg.nn.inits.glorot(self.att)
         pyg.nn.inits.zeros(self.bias)
 
-    def message(self, x_i, x_j, pseudo, edge_index_i, size_i, ptr, index):
-        weight = self.nn(pseudo).view(-1, self.in_channels, self.out_channels)
+    def message(self, x_i, x_j, edge_attr, edge_index_i, size_i, ptr, index):
+        weight = self.nn(edge_attr).view(-1, self.in_channels, self.out_channels)
         x_j = torch.matmul(x_j.unsqueeze(1), weight).squeeze(1)
         x_i = torch.matmul(x_i.unsqueeze(1), weight).squeeze(1)
 

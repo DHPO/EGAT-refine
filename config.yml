@@ -4,7 +4,7 @@ lr: 0.005  # learning rate
 leaky_slope: 0.2  # slope of LeakyReLU
 dropout: 0.3
 vertex_feature_ratio: 0.5 # \lambda
-vertex_type: mgcn_att # egat, egat_merge, egat_split, mgcn, mgcn_att, nnconv, nnconv_att; The type of node modules  (only work for amlsim)
+vertex_type: nnconv_att # egat, egat_merge, egat_split, mgcn, mgcn_att, nnconv, nnconv_att; The type of node modules  (only work for amlsim)
 edge_type: mlp # mlp, egat, mgcn; The type of edge modules  (only work for amlsim)
 edge_order: after  # before, after, parallel; The order inside EGAT layer (only work for amlsim)
 dataset: AMLSim-10K-merge-hard-batch  # AMLSim-10K-merge-hard-batch, cora, citeseer, pubmed; The dataset to use
