@@ -67,7 +67,7 @@ class AttentionNNConv(NNConv):
         pyg.nn.inits.glorot(self.att)
         pyg.nn.inits.zeros(self.bias)
 
-    def message(self, x_i, x_j, pseudo, edge_index_i, size_i):
+    def message(self, x_i, x_j, pseudo, edge_index_i, size_i, ptr, index):
         weight = self.nn(pseudo).view(-1, self.in_channels, self.out_channels)
         x_j = torch.matmul(x_j.unsqueeze(1), weight).squeeze(1)
         x_i = torch.matmul(x_i.unsqueeze(1), weight).squeeze(1)
@@ -78,7 +78,8 @@ class AttentionNNConv(NNConv):
         alpha = (torch.cat([x_i, x_j], dim=-1) * self.att).sum(dim=-1)
         # alpha = self.bn(alpha.squeeze(-1)).unsqueeze(-1)
         alpha = F.leaky_relu(alpha, 0.2)
-        alpha = pyg.utils.softmax(alpha, edge_index_i, size_i)
+        # alpha = pyg.utils.softmax(alpha, edge_index_i, size_i)
+        alpha = pyg.utils.softmax(alpha, index, ptr, size_i)
         alpha = F.dropout(alpha, p=self._dropout, training=self.training)
 
         return (x_j * alpha.view(-1, self._heads, 1)).view(-1, self._vertex_out) + self.bias

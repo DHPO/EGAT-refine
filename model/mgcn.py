@@ -118,7 +118,7 @@ class AttentionVertexModule(VertexModule):
         pyg.nn.inits.glorot(self.att)
         pyg.nn.inits.zeros(self.bias)
 
-    def message(self, x_i, x_j, edge_attr, edge_index_i, size_i):
+    def message(self, x_i, x_j, edge_attr, edge_index_i, size_i, index, ptr):
         x_j = super(AttentionVertexModule, self).message(x_j, edge_attr)
         if self._symmetric:
             x_i = super(AttentionVertexModule, self).message(x_i, edge_attr)
@@ -128,7 +128,8 @@ class AttentionVertexModule(VertexModule):
 
         alpha = (torch.cat([x_i, x_j], dim=-1) * self.att).sum(dim=-1)
         alpha = F.leaky_relu(alpha, 0.2)
-        alpha = pyg.utils.softmax(alpha, edge_index_i, size_i)
+        # alpha = pyg.utils.softmax(alpha, edge_index_i, size_i)
+        alpha = pyg.utils.softmax(alpha, index, ptr, size_i)
         alpha = F.dropout(alpha, p=self._dropout, training=self.training)
 
         return (x_j * alpha.view(-1, self._heads, 1)).view(-1, self._vertex_feature) + self.bias
