@@ -1,6 +1,8 @@
 import pytorch_lightning as pl
 from argparse import Namespace
 import typing as T
+
+from torch.optim import lr_scheduler
 from model.net import AMLSimNet, CitationNet
 import torch_geometric as pyg
 import torch.nn.functional as F
@@ -212,7 +214,11 @@ class EGAT_trainer(pl.LightningModule):
         schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(op, mode='min',
                                                               factor=0.5, patience=50,
                                                               min_lr=0.00001)
-        return [op], [schedule]
+        return {
+            "optimizer": op,
+            "lr_scheduler": schedule,
+            "monitor": "val_loss"
+        }
 
     def dataset(self):
         if self.hparams.dataset == "AMLSim-1K-merge":
@@ -233,7 +239,6 @@ class EGAT_trainer(pl.LightningModule):
         else:
             raise ValueError("Unknown dataset")
 
-    @pl.data_loader
     def train_dataloader(self):
         dataset = self.dataset()
         if self.hparams.dataset == "AMLSim-10K-merge-hard-batch":
@@ -241,7 +246,6 @@ class EGAT_trainer(pl.LightningModule):
         else:
             return pyg.data.DataLoader(dataset, num_workers=0)
 
-    @pl.data_loader
     def val_dataloader(self):
         dataset = self.dataset()
         if self.hparams.dataset == "AMLSim-10K-merge-hard-batch":
@@ -249,7 +253,6 @@ class EGAT_trainer(pl.LightningModule):
         else:
             return pyg.data.DataLoader(dataset, num_workers=0)
 
-    @pl.data_loader
     def test_dataloader(self):
         dataset = self.dataset()
         if self.hparams.dataset == "AMLSim-10K-merge-hard-batch":

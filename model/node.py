@@ -54,7 +54,7 @@ class EGAT_base(MessagePassing):
         else:
             return h
 
-    def message(self, edge_index_i, x_i, x_j, size_i, e, x_o_i, x_o_j, e_o):
+    def message(self, edge_index_i, x_i, x_j, size_i, e, x_o_i, x_o_j, e_o, index, ptr):
         e_size = e.size(0)
         result = self.M(x_i, x_j, e, x_o_i, x_o_j, e_o)
         if self._apart:
@@ -64,13 +64,13 @@ class EGAT_base(MessagePassing):
         m_att = self.Matt(x_i, x_j, e, x_o_i, x_o_j, e_o, Mtmp)
 
         m = m.view(e_size, self._heads, -1)
-        alpha = self.attention(m_att, edge_index_i, size_i)
+        alpha = self.attention(m_att, edge_index_i, size_i, index, ptr)
 
         if self._apart:
             m, m_out = m * alpha.view(-1, self._heads, 1), m_out * alpha.view(-1, self._heads, 1)
             return torch.cat([m, m_out], dim=-1)
         else:
-            return m * alpha.view(-1, self._heads, 1)
+            return (m * alpha.view(-1, self._heads, 1)).view(e_size, -1)
 
     def update(self, aggr_out, x):
         size = aggr_out.size(0)
@@ -83,10 +83,10 @@ class EGAT_base(MessagePassing):
 
         return aggr_out
 
-    def attention(self, m_att, edge_index_i, size_i):
+    def attention(self, m_att, edge_index_i, size_i, index, ptr):
         alpha = (m_att * self.att).sum(dim=-1)
         alpha = F.leaky_relu(alpha, self._leaky)
-        alpha = pyg.utils.softmax(alpha, edge_index_i, size_i)
+        alpha = pyg.utils.softmax(alpha, index, ptr, size_i)
 
         # Sample attention coefficients stochastically.
         alpha = F.dropout(alpha, p=self._dropout, training=self.training)

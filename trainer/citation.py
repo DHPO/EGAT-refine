@@ -138,6 +138,7 @@ class Citation_trainer(pl.LightningModule):
         # schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(op, mode="min", patience=150)
         schedule = torch.optim.lr_scheduler.ReduceLROnPlateau(op, mode='min',
                                                               factor=0.5, patience=40,
+                                                              verbose=True,
                                                               min_lr=0.0001)
         return [op], [schedule]
 
@@ -171,17 +172,14 @@ class Citation_trainer(pl.LightningModule):
         else:
             raise ValueError("Unknown dataset")
 
-    @pl.data_loader
     def train_dataloader(self):
         dataset = self.dataset()
         return pyg.data.DataLoader(dataset, num_workers=0)
 
-    @pl.data_loader
     def val_dataloader(self):
         dataset = self.dataset()
         return pyg.data.DataLoader(dataset, num_workers=0)
 
-    @pl.data_loader
     def test_dataloader(self):
         dataset = self.dataset()
         return pyg.data.DataLoader(dataset, num_workers=0)
