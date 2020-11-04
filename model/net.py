@@ -7,6 +7,7 @@ from model.edge import Edge_MLP, Edge_EGAT, Edge_indentity
 import model.mgcn as mgcn
 import model.nnconv as nnconv
 from torch_geometric.nn import GATConv, GCNConv
+from model.egatwoatt import EGAT_wo_att
 
 
 class ResidualAgg(nn.Module):
@@ -198,6 +199,16 @@ class Layer(nn.Module):
                 dropout=config.get("dropout", 0.5),
                 batchnorm_order=config.get("batchnorm_order", "pre"),
                 attention=True
+            )
+        elif vertex_type == "egat_wo_att":
+            return EGAT_wo_att(
+                vertex_feature=config.get("vertex_feature"),
+                edge_feature=config.get("edge_feature"),
+                dropout=config.get("dropout", 0.5),
+                vertex_feature_ratio=config.get("vertex_feature_ratio", 0.5),
+                heads=config.get("heads", 8),
+                concat=config.get("concat", True),
+                leaky=config.get("leaky", 0.2),
             )
         else:
             raise ValueError("Unknown vertex module type: {}".format(vertex_type))
