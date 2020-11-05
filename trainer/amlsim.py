@@ -11,6 +11,7 @@ from dataset import AMLSimDataset, BatchAMLSimDataset
 from transforms.normalize import NormalizeFeatures
 from transforms.graph import AttachEdgeAttr, AddSelfLoop
 from torch_geometric.transforms import Compose
+from transforms.dataset import AttachEdgeLabel
 
 
 class EGAT_trainer(pl.LightningModule):
@@ -41,17 +42,22 @@ class EGAT_trainer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         data: pyg.data.Data = batch
 
-        y_pred = self.model(data)
+        y_pred, edge_pred = self.model(data)
         if self.hparams.dataset == "AMLSim-10K-merge-hard-batch":
             y_pred_train = y_pred
             y_true_train = data.y
+            edge_pred_train = edge_pred
+            edge_true_train = data.edge_label
         else:
             y_pred_train = y_pred[data.train_mask]
             y_true_train = data.y[data.train_mask]
+            edge_pred_train = edge_pred
+            edge_true_train = data.edge_label
 
         y_true_train = y_true_train.to(y_pred.device)
+        edge_true_train = edge_true_train.to(y_pred.device)
 
-        loss = F.cross_entropy(y_pred_train, y_true_train, weight=self.weight)
+        loss = F.cross_entropy(y_pred_train, y_true_train, weight=self.weight) + F.cross_entropy(edge_pred_train, edge_true_train)
 
         tensorboard_log = {
             "train_loss": loss
@@ -62,7 +68,7 @@ class EGAT_trainer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         data: pyg.data.Data = batch
 
-        y_pred = self.model(data)
+        y_pred, _ = self.model(data)
 
         if self.hparams.dataset == "AMLSim-10K-merge-hard-batch":
             y_pred_val = y_pred
@@ -104,7 +110,7 @@ class EGAT_trainer(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         data: pyg.data.Data = batch
 
-        y_pred = self.model(data)
+        y_pred, _ = self.model(data)
 
         if self.hparams.dataset == "AMLSim-10K-merge-hard-batch":
             y_pred_test = y_pred
@@ -234,7 +240,8 @@ class EGAT_trainer(pl.LightningModule):
         elif self.hparams.dataset == "AMLSim-10K-merge-hard-batch":
             return BatchAMLSimDataset(root="data/AMLSim/10K-merge-hard-batch", transform=Compose([
                 # AddSelfLoop("zero"),
-                NormalizeFeatures()
+                NormalizeFeatures(),
+                AttachEdgeLabel()
             ]))
         else:
             raise ValueError("Unknown dataset")

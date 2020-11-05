@@ -269,6 +269,13 @@ class AMLSimNet(nn.Module):
                 nn.Dropout(p=self._dropout),
                 nn.Linear(self._vertex_feature, self._num_classes)
             )
+            self._predict_edge = nn.Sequential(
+                nn.Linear(self._predict_feature_in, self._vertex_feature),
+                nn.BatchNorm1d(self._vertex_feature) if self._batchnorm_order != "none" else nn.Identity(),
+                nn.ReLU(),
+                nn.Dropout(p=self._dropout),
+                nn.Linear(self._vertex_feature, self._num_classes)
+            )
         else:
             self._predict = nn.Linear(self._predict_feature_in, self._num_classes)
 
@@ -280,6 +287,7 @@ class AMLSimNet(nn.Module):
         e = self._edge_linear(e)
 
         h_outputs = [x]
+        e_outputs = [e]
 
         if self._update_method != "none":
             x, x_hidden = self._update_module_vertex(x, torch.zeros_like(x))
@@ -293,6 +301,7 @@ class AMLSimNet(nn.Module):
             # x_hidden, e_hidden = x, e
             (x, e), (x_o, e_o), (x_hidden, e_hidden) = layer(x, e_idx, e, x_hidden, e_hidden)
             h_outputs.append(x_o)
+            e_outputs.append(e_o)
             # if self._update_method != "none":
             #     x, x_hidden = self._update_module_vertex(x_hidden, x)
             #     e, e_hidden = self._update_module_edge(e_hidden, e)
@@ -300,13 +309,15 @@ class AMLSimNet(nn.Module):
         # layer aggregation
         if self._layer_aggregation_method == "last":
             h = x
+            e = e
         elif self._layer_aggregation_method == "concat":
             h = torch.cat(h_outputs, dim=-1)
+            e = torch.cat(e_outputs, dim=-1)
         else:
             raise NotImplementedError
 
         # classifier
-        return self._predict(h)
+        return self._predict(h), self._predict_edge(e)
 
     @property
     def _predict_feature_in(self):
