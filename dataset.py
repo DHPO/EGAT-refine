@@ -188,8 +188,9 @@ class BatchAMLSimDataset(AMLSimDataset):
         raw_g = pyg.utils.from_networkx(graph)
 
         x, edge_attr = self.data_process(raw_g)
+        edge_label, _ = y[raw_g.edge_index].max(dim=0)
 
-        g = pyg.data.Data(x=x, edge_index=raw_g.edge_index, edge_attr=edge_attr, y=y, train_mask=train_mask, val_mask=val_mask, test_mask=test_mask)
+        g = pyg.data.Data(x=x, edge_index=raw_g.edge_index, edge_attr=edge_attr, edge_label=edge_label, y=y, train_mask=train_mask, val_mask=val_mask, test_mask=test_mask)
 
         return g
 
